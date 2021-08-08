@@ -26,7 +26,7 @@
 <meta name="description" content="DartVM介绍 原文地址：https:&#x2F;&#x2F;mrale.ph&#x2F;dartvm&#x2F;   此文的书写目的 此文章用来作为DartVM团队新成员、潜在的外部贡献者或仅仅是对VM内部有兴趣的任何人提供参考。本文对DartVM进行了高度的概括，并对各种内部组件的细节进行了一些描述。  DartVM是用于在原生环境执行Dart代码的一系列组件的集合。其主要包含了一下内容：  运行时系统 对象模型 垃圾回收 快照">
 <meta property="og:type" content="article">
 <meta property="og:title" content="20210630DartVM介绍-DartVM如何执行你的代码">
-<meta property="og:url" content="http://lkv1988.github.io/2021/06/30/20210630DartVM%E4%BB%8B%E7%BB%8D-DartVM%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81/index.html">
+<meta property="og:url" content="http://lkv1988.github.io/2021/08/08/20210630DartVM%E4%BB%8B%E7%BB%8D-DartVM%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81/index.html">
 <meta property="og:site_name" content="Kevin Liu&#39;s Blog">
 <meta property="og:description" content="DartVM介绍 原文地址：https:&#x2F;&#x2F;mrale.ph&#x2F;dartvm&#x2F;   此文的书写目的 此文章用来作为DartVM团队新成员、潜在的外部贡献者或仅仅是对VM内部有兴趣的任何人提供参考。本文对DartVM进行了高度的概括，并对各种内部组件的细节进行了一些描述。  DartVM是用于在原生环境执行Dart代码的一系列组件的集合。其主要包含了一下内容：  运行时系统 对象模型 垃圾回收 快照">
 <meta property="og:locale" content="zh_CN">
@@ -48,14 +48,14 @@
 <meta property="og:image" content="https://blog-imgs-1301146282.cos.ap-chengdu.myqcloud.com/20210629145313.png">
 <meta property="og:image" content="https://blog-imgs-1301146282.cos.ap-chengdu.myqcloud.com/20210630095725.png">
 <meta property="og:image" content="https://blog-imgs-1301146282.cos.ap-chengdu.myqcloud.com/20210630100001.png">
-<meta property="article:published_time" content="2021-06-30T03:21:05.526Z">
-<meta property="article:modified_time" content="2021-06-30T03:21:05.526Z">
+<meta property="article:published_time" content="2021-08-08T05:35:20.642Z">
+<meta property="article:modified_time" content="2021-08-08T05:35:20.642Z">
 <meta property="article:author" content="Kevin Liu">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://blog-imgs-1301146282.cos.ap-chengdu.myqcloud.com/20210506225620.png">
 
 
-<link rel="canonical" href="http://lkv1988.github.io/2021/06/30/20210630DartVM%E4%BB%8B%E7%BB%8D-DartVM%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81/">
+<link rel="canonical" href="http://lkv1988.github.io/2021/08/08/20210630DartVM%E4%BB%8B%E7%BB%8D-DartVM%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81/">
 
 
 <script class="page-configurations">
@@ -179,7 +179,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">6</span>
+          <span class="site-state-item-count">7</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -229,7 +229,7 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://lkv1988.github.io/2021/06/30/20210630DartVM%E4%BB%8B%E7%BB%8D-DartVM%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81/">
+    <link itemprop="mainEntityOfPage" href="http://lkv1988.github.io/2021/08/08/20210630DartVM%E4%BB%8B%E7%BB%8D-DartVM%E5%A6%82%E4%BD%95%E6%89%A7%E8%A1%8C%E4%BD%A0%E7%9A%84%E4%BB%A3%E7%A0%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -253,7 +253,7 @@
       </span>
       <span class="post-meta-item-text">发表于</span>
 
-      <time title="创建时间：2021-06-30 11:21:05" itemprop="dateCreated datePublished" datetime="2021-06-30T11:21:05+08:00">2021-06-30</time>
+      <time title="创建时间：2021-08-08 13:35:20" itemprop="dateCreated datePublished" datetime="2021-08-08T13:35:20+08:00">2021-08-08</time>
     </span>
 
   
@@ -590,9 +590,12 @@
 
           <div class="post-nav">
             <div class="post-nav-item">
+                <a href="/2021/08/08/20210806%20Dagger2%20Tips/" rel="prev" title="20210806 Dagger2 Tips">
+                  <i class="fa fa-chevron-left"></i> 20210806 Dagger2 Tips
+                </a>
             </div>
             <div class="post-nav-item">
-                <a href="/2021/06/30/20201220%20Jetpack%20Startup%E5%BF%AB%E9%80%9F%E6%8E%8C%E6%8F%A1/" rel="next" title="20201220 Jetpack Startup快速掌握">
+                <a href="/2021/08/08/20201220%20Jetpack%20Startup%E5%BF%AB%E9%80%9F%E6%8E%8C%E6%8F%A1/" rel="next" title="20201220 Jetpack Startup快速掌握">
                   20201220 Jetpack Startup快速掌握 <i class="fa fa-chevron-right"></i>
                 </a>
             </div>

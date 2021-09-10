@@ -155,7 +155,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
           <a href="/archives">
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -204,6 +204,99 @@
   
 
   <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://lkv1988.github.io/2021/09/08/%E8%AF%91-%E6%B7%B1%E5%85%A5Kotlin%E5%8D%8F%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Kevin Liu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin Liu's Blog">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          <a href="/2021/09/08/%E8%AF%91-%E6%B7%B1%E5%85%A5Kotlin%E5%8D%8F%E7%A8%8B/" class="post-title-link" itemprop="url">译-深入Kotlin协程</a>
+        </h2>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-09-09 00:00:00" itemprop="dateCreated datePublished" datetime="2021-09-09T00:00:00+08:00">2021-09-09</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+          <h1 id="20210909【译】深入Kotlin协程"><a href="#20210909【译】深入Kotlin协程" class="headerlink" title="20210909【译】深入Kotlin协程"></a>20210909【译】深入Kotlin协程</h1><p>原文链接：<a href="https://kt.academy/article/cc-under-the-hood" target="_blank" rel="noopener">https://kt.academy/article/cc-under-the-hood</a></p>
+<blockquote>
+<p>内容来自于<a href="https://kt.academy/book/coroutines" target="_blank" rel="noopener">Kotlin Coroutines</a>书中的一个章节，可以在<a href="https://leanpub.com/coroutines/" target="_blank" rel="noopener">LeanPub</a>中找到它</p>
+</blockquote>
+<p>就有那么一类人，他们不会仅仅只是接受汽车是能开动的。他们需要去打开它的引擎盖，尝试理解一下在引擎盖之下它是如何运作的。而我就是这一类人，所以我需要搞清楚协程是如何运作的。如果你也和我一样，那么你会喜欢这一章节的内容，如果你不是的话，那么可以跳过它了。</p>
+<p>本章不会想你介绍新的工具，仅仅只是一个解释。将要试图去达到让人满意的程度来解释协程是如何工作的。关键的课程是：</p>
+<ul>
+<li>挂起方法就像是状态机，在方法执行伊始以及每个挂起函数之后都带着一个可能的状态数据</li>
+<li>用来表征状态的数字和本地数据都会被保持在<code>Continuation</code>所代表的的后续执行过程对象中</li>
+<li>代表一个方法的<code>Continuation</code>又被另一个的所修饰起来，结果就是所有的<code>Continuation</code>代表着一个调用栈，会在恢复的时候被用到</li>
+</ul>
+<p>如果你对一些内部原理感兴趣（简化过的），随我来。</p>
+<h2 id="后续传递风格"><a href="#后续传递风格" class="headerlink" title="后续传递风格"></a>后续传递风格</h2><blockquote>
+<p><a href="https://en.wikipedia.org/wiki/Continuation-passing_style" target="_blank" rel="noopener">Continuation-passing style</a></p>
+</blockquote>
+<p>挂起函数是有好几种声明的方式的，但是Kotlin团队决定了使用了：后续传递风格。这代表了后续过程会被作为参数在方法之间进行传递</p>
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2021/09/08/%E8%AF%91-%E6%B7%B1%E5%85%A5Kotlin%E5%8D%8F%E7%A8%8B/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
+      
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+        <div class="post-eof"></div>
+      
+    </footer>
+  </article>
+</div>
+
+
+
+
+    
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="http://lkv1988.github.io/2021/08/05/%20Dagger2%20Tips/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -235,7 +328,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-08-08 14:06:56" itemprop="dateModified" datetime="2021-08-08T14:06:56+08:00">2021-08-08</time>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
       </span>
 
   
@@ -346,7 +439,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-08-08 14:06:56" itemprop="dateModified" datetime="2021-08-08T14:06:56+08:00">2021-08-08</time>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
       </span>
 
   
@@ -454,7 +547,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-08-08 14:06:56" itemprop="dateModified" datetime="2021-08-08T14:06:56+08:00">2021-08-08</time>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
       </span>
 
   
@@ -540,7 +633,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-08-08 14:06:56" itemprop="dateModified" datetime="2021-08-08T14:06:56+08:00">2021-08-08</time>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
       </span>
 
   
@@ -626,7 +719,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-08-08 14:06:56" itemprop="dateModified" datetime="2021-08-08T14:06:56+08:00">2021-08-08</time>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
       </span>
 
   
@@ -712,7 +805,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-08-08 14:06:56" itemprop="dateModified" datetime="2021-08-08T14:06:56+08:00">2021-08-08</time>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
       </span>
 
   
@@ -800,7 +893,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-08-08 14:06:56" itemprop="dateModified" datetime="2021-08-08T14:06:56+08:00">2021-08-08</time>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
       </span>
 
   

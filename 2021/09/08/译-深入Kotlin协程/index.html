@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.1/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lkv1988.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.0.2","exturl":false,"sidebar":{"position":"right","width":330,"display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+<meta name="description" content="20210909【译】深入Kotlin协程原文链接：https:&#x2F;&#x2F;kt.academy&#x2F;article&#x2F;cc-under-the-hood  内容来自于Kotlin Coroutines书中的一个章节，可以在LeanPub中找到它  就有那么一类人，他们不会仅仅只是接受汽车是能开动的。他们需要去打开它的引擎盖，尝试理解一下在引擎盖之下它是如何运作的。而我就是这一类人，所以我需要搞清楚协程是如何运">
+<meta property="og:type" content="article">
+<meta property="og:title" content="译-深入Kotlin协程">
+<meta property="og:url" content="http://lkv1988.github.io/2021/09/08/%E8%AF%91-%E6%B7%B1%E5%85%A5Kotlin%E5%8D%8F%E7%A8%8B/index.html">
+<meta property="og:site_name" content="Kevin Liu&#39;s Blog">
+<meta property="og:description" content="20210909【译】深入Kotlin协程原文链接：https:&#x2F;&#x2F;kt.academy&#x2F;article&#x2F;cc-under-the-hood  内容来自于Kotlin Coroutines书中的一个章节，可以在LeanPub中找到它  就有那么一类人，他们不会仅仅只是接受汽车是能开动的。他们需要去打开它的引擎盖，尝试理解一下在引擎盖之下它是如何运作的。而我就是这一类人，所以我需要搞清楚协程是如何运">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_show_kotlin_bytecode.png">
+<meta property="og:image" content="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_decompile.png">
+<meta property="og:image" content="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_decompiled_code.png">
+<meta property="og:image" content="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_call_stack.png">
+<meta property="article:published_time" content="2021-09-08T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-09-10T02:57:31.447Z">
+<meta property="article:author" content="Kevin Liu">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_show_kotlin_bytecode.png">
+
+
+<link rel="canonical" href="http://lkv1988.github.io/2021/09/08/%E8%AF%91-%E6%B7%B1%E5%85%A5Kotlin%E5%8D%8F%E7%A8%8B/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+<title>译-深入Kotlin协程 | Kevin Liu's Blog</title>
+  
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Kevin Liu's Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Keep Moving</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <section class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#20210909【译】深入Kotlin协程"><span class="nav-number">1.</span> <span class="nav-text">20210909【译】深入Kotlin协程</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#后续传递风格"><span class="nav-number">1.1.</span> <span class="nav-text">后续传递风格</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#简单的方法"><span class="nav-number">1.2.</span> <span class="nav-text">简单的方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#带有状态的方法"><span class="nav-number">1.3.</span> <span class="nav-text">带有状态的方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#带值恢复的方法"><span class="nav-number">1.4.</span> <span class="nav-text">带值恢复的方法</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#异常"><span class="nav-number">1.5.</span> <span class="nav-text">异常</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#调用栈"><span class="nav-number">1.6.</span> <span class="nav-text">调用栈</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#真实的代码"><span class="nav-number">1.7.</span> <span class="nav-text">真实的代码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#讨论"><span class="nav-number">1.8.</span> <span class="nav-text">讨论</span></a></li></ol></li></ol></div>
+        </section>
+        <!--/noindex-->
+
+        <section class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Kevin Liu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">8</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/lkv1988" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lkv1988" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:airk908@gmail.com" title="E-Mail → mailto:airk908@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+        </section>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/lkv1988" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://lkv1988.github.io/2021/09/08/%E8%AF%91-%E6%B7%B1%E5%85%A5Kotlin%E5%8D%8F%E7%A8%8B/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Kevin Liu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin Liu's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          译-深入Kotlin协程
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2021-09-09 00:00:00" itemprop="dateCreated datePublished" datetime="2021-09-09T00:00:00+08:00">2021-09-09</time>
+    </span>
+      <span class="post-meta-item">
+        <span class="post-meta-item-icon">
+          <i class="far fa-calendar-check"></i>
+        </span>
+        <span class="post-meta-item-text">更新于</span>
+        <time title="修改时间：2021-09-10 10:57:31" itemprop="dateModified" datetime="2021-09-10T10:57:31+08:00">2021-09-10</time>
+      </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h1 id="20210909【译】深入Kotlin协程"><a href="#20210909【译】深入Kotlin协程" class="headerlink" title="20210909【译】深入Kotlin协程"></a>20210909【译】深入Kotlin协程</h1><p>原文链接：<a href="https://kt.academy/article/cc-under-the-hood" target="_blank" rel="noopener">https://kt.academy/article/cc-under-the-hood</a></p>
+<blockquote>
+<p>内容来自于<a href="https://kt.academy/book/coroutines" target="_blank" rel="noopener">Kotlin Coroutines</a>书中的一个章节，可以在<a href="https://leanpub.com/coroutines/" target="_blank" rel="noopener">LeanPub</a>中找到它</p>
+</blockquote>
+<p>就有那么一类人，他们不会仅仅只是接受汽车是能开动的。他们需要去打开它的引擎盖，尝试理解一下在引擎盖之下它是如何运作的。而我就是这一类人，所以我需要搞清楚协程是如何运作的。如果你也和我一样，那么你会喜欢这一章节的内容，如果你不是的话，那么可以跳过它了。</p>
+<p>本章不会想你介绍新的工具，仅仅只是一个解释。将要试图去达到让人满意的程度来解释协程是如何工作的。关键的课程是：</p>
+<ul>
+<li>挂起方法就像是状态机，在方法执行伊始以及每个挂起函数之后都带着一个可能的状态数据</li>
+<li>用来表征状态的数字和本地数据都会被保持在<code>Continuation</code>所代表的的后续执行过程对象中</li>
+<li>代表一个方法的<code>Continuation</code>又被另一个的所修饰起来，结果就是所有的<code>Continuation</code>代表着一个调用栈，会在恢复的时候被用到</li>
+</ul>
+<p>如果你对一些内部原理感兴趣（简化过的），随我来。</p>
+<h2 id="后续传递风格"><a href="#后续传递风格" class="headerlink" title="后续传递风格"></a>后续传递风格</h2><blockquote>
+<p><a href="https://en.wikipedia.org/wiki/Continuation-passing_style" target="_blank" rel="noopener">Continuation-passing style</a></p>
+</blockquote>
+<p>挂起函数是有好几种声明的方式的，但是Kotlin团队决定了使用了：后续传递风格。这代表了后续过程会被作为参数在方法之间进行传递</p>
+<blockquote>
+<p>按照惯例，代表后续过程的参数会是方法声明中的最后一个</p>
+</blockquote>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">getUser</span><span class="params">()</span></span>: User?</span><br><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">setUser</span><span class="params">(user: <span class="type">User</span>)</span></span></span><br><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">checkAvailability</span><span class="params">(flight: <span class="type">Flight</span>)</span></span>: <span class="built_in">Boolean</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 实际上会是下边的样子：</span></span><br><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">getUser</span><span class="params">(continuation: <span class="type">Continuation</span>&lt;*&gt;)</span></span>: Any?</span><br><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">setUser</span><span class="params">(user: <span class="type">User</span>, continuation: <span class="type">Continuation</span>&lt;*&gt;)</span></span>: Any</span><br><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">checkAvailability</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    flight: <span class="type">Flight</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">    continuation: <span class="type">Continuation</span>&lt;*&gt;</span></span></span><br><span class="line"><span class="function"><span class="params">)</span></span>: Any</span><br></pre></td></tr></table></figure>
+
+<p>你应该已经注意到了，实际上的方法的返回类型和原始声明并不一样。所有类型都变成了<code>Any</code>类型，那些可空的变成了<code>Any?</code>。为什么会这样呢？原因是挂起函数是可能被挂起的，所以它们有可能不会返回一个生命类型。在这种情况下，它所返回的实际上是一个特殊的<code>COROUTINE_SUSPENDED</code>标记。稍后在联系中会看到。</p>
+<p>现在只需要关注，因为<code>getUser</code>可能会返回<code>User?</code>或<code>COROUTINE_SUSPENDED</code>（<code>Any</code>类型），所以他的结果就必须是<code>User?</code>和<code>Any</code>的超类型，即<code>Any?</code>。</p>
+<blockquote>
+<p>也许有一天，Kotlin会引入一个集合类型，那么这里我们就可以写成<code>User?|COROUTINE_SUSPENDED</code>了</p>
+</blockquote>
+<h2 id="简单的方法"><a href="#简单的方法" class="headerlink" title="简单的方法"></a>简单的方法</h2><p>挖的更深一点，看看下边这个例子，一个延迟前后有简单打印：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">()</span></span> &#123;</span><br><span class="line">  println(<span class="string">"Before"</span>)</span><br><span class="line">  delay(<span class="number">1000</span>) <span class="comment">//挂起中</span></span><br><span class="line">  println(<span class="string">"After"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>你已经可以推断出来，真实的方法签名会是：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">(continuation: <span class="type">Continuation</span>&lt;*&gt;)</span></span>: Any</span><br></pre></td></tr></table></figure>
+
+<p>接下来此方法需要他自己的“后续”，来记得它的状态数据。让我们将它命名为：<code>MyFunctionContinuation</code>（实际上的“后续”是一个对象展开式，并没有名字，但是通过现在的方式方便后边进行解释）。在此方法的一开始，<code>myFunction</code>会用<code>MyFunctionContinuation</code>来包装参数上的<code>continuation</code>：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> continuation = MyFunctionContinuation(continuation)</span><br></pre></td></tr></table></figure>
+
+<p>只有在<code>continuation</code>尚未被包装过的时候才可以这么做。一旦包装完毕，它就是恢复进程中的一员了，我们应该保持<code>continuation</code>不变（当前可能听起来很困惑，但是接下来你就会明白为什么了）：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> continuation =</span><br><span class="line">	<span class="keyword">if</span> (continuation <span class="keyword">is</span> MyFunctionContinuation) continuation</span><br><span class="line">	<span class="keyword">else</span> MyFunctionContinuation(continuation)</span><br></pre></td></tr></table></figure>
+
+<p>可以简化为：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">val</span> continuation = continuation <span class="keyword">as</span>? MyFunctionContinuation</span><br><span class="line">	?: MyFunctionContinuation(continuation)</span><br></pre></td></tr></table></figure>
+
+<p>最终，让我们谈谈方法的内容：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">()</span></span> &#123;</span><br><span class="line">  println(<span class="string">"Before"</span>)</span><br><span class="line">  delay(<span class="number">1000</span>) <span class="comment">//挂起中</span></span><br><span class="line">  println(<span class="string">"After"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>这个方法可能通过两种方式开始：</p>
+<ul>
+<li>它本身是第一个调用</li>
+<li>从某讴歌挂起点后恢复</li>
+</ul>
+<p>为了标记当前的状态，我们声明一个变量叫做<code>label</code>，在开始时它是0，然后方法在一开始就会执行。在每一个挂起点之前，它都会被赋值为下一个状态，所以在恢复后我们就可以刚好在挂起点后启动：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 用来描述myFunction背后是如何运行的简单的演示</span></span><br><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">(continuation: <span class="type">Continuation</span>&lt;<span class="type">Unit</span>&gt;)</span></span>: Any &#123;</span><br><span class="line">    <span class="keyword">val</span> continuation = continuation <span class="keyword">as</span>? MyFunctionContinuation</span><br><span class="line">        ?: MyFunctionContinuation(continuation)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">0</span>) &#123;</span><br><span class="line">        println(<span class="string">"Before"</span>)</span><br><span class="line">        continuation.label = <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> (delay(<span class="number">1000</span>, continuation) == COROUTINE_SUSPENDED) &#123;</span><br><span class="line">            <span class="keyword">return</span> COROUTINE_SUSPENDED</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">1</span>) &#123;</span><br><span class="line">        println(<span class="string">"After"</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">Unit</span></span><br><span class="line">    &#125;</span><br><span class="line">    error(<span class="string">"Impossible"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>最后一个重要的点在上边的代码片段中也有展示，就是当<code>delay</code>方法被挂起时，此函数直接返回了<code>COROUTINE_SUSPENDED</code>，同样的事情也会发生在调用此函数的上级函数中，层层向上直到调用栈的顶部。这就是一个挂起节点是如何终结掉所有函数的，然后此线程就可以去做其他事情了。</p>
+<p>在我们继续之前，来分析一下上边的代码。如果<code>delay</code>的调用返回了<code>COROUTINE_SUSPENDED</code>会发生什么？而如果返回了<code>Unit</code>呢（虽然不可能，但是假设一下）？</p>
+<p>如果<code>delay</code>返回了<code>Unit</code>（即什么都没返回），那么会像其他的函数一样正常之后，而后将运转到下一个状态（<code>label</code>被赋值）</p>
+<p><code>MyFunctionContinuation</code>的声明实际上是很短暂的，它会继承与<code>ContinuationImpl</code>：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyFunctionContinuation</span></span>(continuation: Continuation&lt;*&gt;) : ContinuationImpl(continuation) &#123;</span><br><span class="line">    <span class="keyword">var</span> result: Any? = <span class="literal">null</span> <span class="comment">// 在此场景中这个返回值是无用的，就是个Unit，后边会阐述有什么用处</span></span><br><span class="line">    <span class="keyword">var</span> label = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">invokeSuspend</span><span class="params">($result$: <span class="type">Any</span>?)</span></span>: Any? &#123;</span><br><span class="line">        <span class="keyword">this</span>.result = $result;</span><br><span class="line">        <span class="keyword">return</span> myFunction(<span class="keyword">this</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>你可能已经注意到了，我们的<code>continuation</code>继承自<code>ContinuationImpl</code>。这个类以及它的父类们，是负责了整个恢复过程的。它们的全景是相当复杂的，随着时间的推移它会越来越趋于简化，但是现在我们只需要为我们的简单方法做一个最小化的<code>continuation</code>就可以了（所以后边我们会继承于<code>Continuation</code>而不是<code>ContinuationImpl</code>）。在这个简化版中，我们假设：</p>
+<ul>
+<li><code>continuation</code>仅仅需要一个状态来表示我们在哪里挂起了，通过<code>label</code></li>
+<li>传入<code>resume</code>的值并不重要（是个<code>Unit</code>）</li>
+<li>当发生异常时<code>continuation</code>将不会被恢复</li>
+</ul>
+<p>下边的代码片段你可以拿来运行和分析，它是可以正常工作的。需要记住下边有非常多的简化操作，真实的<code>continuation</code>有更多的逻辑需要考量（大多数我们后边会解释到），<code>delay</code>会用它自己的类行包装<code>continuation</code>，我们启动的方式类似，都是用协程构造器：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">(continuation: <span class="type">Continuation</span>&lt;<span class="type">Unit</span>&gt;)</span></span>: Any &#123;</span><br><span class="line">    <span class="keyword">val</span> continuation = continuation <span class="keyword">as</span>? MyFunctionContinuation</span><br><span class="line">    ?: MyFunctionContinuation(continuation)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">0</span>) &#123;</span><br><span class="line">        println(<span class="string">"Before"</span>)</span><br><span class="line">        continuation.label = <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> (delay(<span class="number">1000</span>, continuation) == COROUTINE_SUSPENDED) &#123;</span><br><span class="line">            <span class="keyword">return</span> COROUTINE_SUSPENDED</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">1</span>) &#123;</span><br><span class="line">        println(<span class="string">"After"</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">Unit</span></span><br><span class="line">    &#125;</span><br><span class="line">    error(<span class="string">"Impossible"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyFunctionContinuation</span></span>(<span class="keyword">val</span> completion: Continuation&lt;<span class="built_in">Unit</span>&gt;) : Continuation&lt;<span class="built_in">Unit</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">val</span> context: CoroutineContext</span><br><span class="line">    <span class="keyword">get</span>() = completion.context</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> label = <span class="number">0</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">resumeWith</span><span class="params">(result: <span class="type">Result</span>&lt;<span class="type">Unit</span>&gt;)</span></span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (result.isSuccess) &#123;</span><br><span class="line">            <span class="keyword">val</span> res = myFunction(<span class="keyword">this</span>)</span><br><span class="line">            completion.resume(res <span class="keyword">as</span> <span class="built_in">Unit</span>)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ... 余下的部分后边再说</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上述的代码是下边这段代码会发生什么的简单描述版本：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//sampleStart</span></span><br><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">()</span></span> &#123;</span><br><span class="line">    println(<span class="string">"Before"</span>)</span><br><span class="line">    delay(<span class="number">1000</span>)</span><br><span class="line">    println(<span class="string">"After"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">val</span> EMPTY_CONTINUATION = <span class="keyword">object</span> : Continuation&lt;<span class="built_in">Unit</span>&gt; &#123;</span><br><span class="line">        <span class="keyword">override</span> <span class="keyword">val</span> context: CoroutineContext = EmptyCoroutineContext</span><br><span class="line"></span><br><span class="line">        <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">resumeWith</span><span class="params">(result: <span class="type">Result</span>&lt;<span class="type">Unit</span>&gt;)</span></span> &#123;</span><br><span class="line">            <span class="comment">// no-op</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">suspend</span> &#123; myFunction() &#125;.startCoroutine(EMPTY_CONTINUATION)</span><br><span class="line">    Thread.sleep(<span class="number">2000</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>将上述代码赋值到<strong>IIntellJ IDEA</strong>中，使用 Tools &gt; Kotlin &gt; Show Kotlin bytecode 的<code>Decompile</code>（反编译）按钮。你会看到它们被反编译为了Java代码（如果用Java写的话看看这代码会差不多长成什么样子）</p>
+<p><img src="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_show_kotlin_bytecode.png" alt=""></p>
+<p><img src="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_decompile.png" alt=""></p>
+<p><img src="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_decompiled_code.png" alt=""></p>
+<h2 id="带有状态的方法"><a href="#带有状态的方法" class="headerlink" title="带有状态的方法"></a>带有状态的方法</h2><p>如果一个方法有一些状态（比如本地变量）是需要在挂起之后恢复的，那么这些状态需要在它的<code>continuation</code>中保持住。比如下边的方法：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">()</span></span> &#123;</span><br><span class="line">  println(<span class="string">"Before"</span>)</span><br><span class="line">  <span class="keyword">val</span> counter = <span class="number">0</span></span><br><span class="line">  delay(<span class="number">1000</span>) <span class="comment">//挂起中</span></span><br><span class="line">  counter++</span><br><span class="line">  println(<span class="string">"Counter: <span class="variable">$counter</span>"</span>)</span><br><span class="line">  println(<span class="string">"After"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在挂起前，需要将状态存储在<code>continuation</code>中，挂起后才可以进行恢复。接下来这个方法是怎么做的就像是这样（简化版）：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">myFunction</span><span class="params">(continuation: <span class="type">Continuation</span>&lt;<span class="type">Unit</span>&gt;)</span></span>: Any &#123;</span><br><span class="line">    <span class="keyword">val</span> continuation = continuation <span class="keyword">as</span>? MyFunctionContinuation</span><br><span class="line">    ?: MyFunctionContinuation(continuation)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> counter = continuation.counter <span class="comment">//初始化</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">0</span>) &#123;</span><br><span class="line">        println(<span class="string">"Before"</span>)</span><br><span class="line">        counter = <span class="number">0</span></span><br><span class="line">        continuation.counter = counter <span class="comment">//存储</span></span><br><span class="line">        continuation.label = <span class="number">1</span></span><br><span class="line">        <span class="keyword">if</span> (delay(<span class="number">1000</span>, continuation) == COROUTINE_SUSPENDED) &#123;</span><br><span class="line">            <span class="keyword">return</span> COROUTINE_SUSPENDED</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">1</span>) &#123;</span><br><span class="line">        counter = (counter <span class="keyword">as</span> <span class="built_in">Int</span>) + <span class="number">1</span> <span class="comment">//消费</span></span><br><span class="line">        println(<span class="string">"Counter: <span class="variable">$counter</span>"</span>)</span><br><span class="line">        println(<span class="string">"After"</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">Unit</span></span><br><span class="line">    &#125;</span><br><span class="line">    error(<span class="string">"Impossible"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyFunctionContinuation</span></span>(</span><br><span class="line">    <span class="keyword">val</span> completion: Continuation&lt;<span class="built_in">Unit</span>&gt;</span><br><span class="line">        ) : Continuation&lt;<span class="built_in">Unit</span>&gt; &#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">val</span> context: CoroutineContext <span class="comment">// 现在先别管这个变量</span></span><br><span class="line">    <span class="keyword">get</span>() = completion.context</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> label = <span class="number">0</span></span><br><span class="line">    <span class="keyword">var</span> counter: <span class="built_in">Int</span>? = <span class="literal">null</span> <span class="comment">//用来存储原有方法的状态数据counter</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">resumeWith</span><span class="params">(result: <span class="type">Result</span>&lt;<span class="type">Unit</span>&gt;)</span></span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (result.isSuccess) &#123;</span><br><span class="line">            <span class="keyword">val</span> res = myFunction(<span class="keyword">this</span>)</span><br><span class="line">            completion.resume(res <span class="keyword">as</span> <span class="built_in">Unit</span>)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ... 稍后再讨论这部分</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="带值恢复的方法"><a href="#带值恢复的方法" class="headerlink" title="带值恢复的方法"></a>带值恢复的方法</h2><p>这是个稍稍不同的场景：如果在挂起中我们的确需要一些数据。让我们分析下下边的方法：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">printUser</span><span class="params">(token: <span class="type">String</span>)</span></span> &#123;</span><br><span class="line">    println(<span class="string">"Before"</span>)</span><br><span class="line">    <span class="keyword">val</span> userId = getUserId(token) <span class="comment">// suspending</span></span><br><span class="line">    println(<span class="string">"Got userId: <span class="variable">$userId</span>"</span>)</span><br><span class="line">    <span class="keyword">val</span> userName = getUserName(userId) <span class="comment">// suspending</span></span><br><span class="line">    println(User(userId, userName))</span><br><span class="line">    println(<span class="string">"After"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>上边有两个挂起函数：</p>
+<ul>
+<li><code>getUserId</code></li>
+<li><code>getUserName</code></li>
+</ul>
+<p>我们添加了一个入参，同时我们的挂起函数也返回了一些值。这些值都需要被存储在<code>continuation</code>中：</p>
+<ul>
+<li><code>userId</code>，因为它在恢复后被其他状态需要</li>
+<li><code>result</code>，函数中并没有这个变量，但其代表了挂起中的函数的返回值（初始状态的user id，以及第二状态时的 user name）</li>
+<li><code>token</code>，是在<code>continuation</code>中被需要的，因为在<code>printUser</code>方法被调用时候需要它</li>
+</ul>
+<p>下边是它的模样：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">printUser</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">    token: <span class="type">String</span>,</span></span></span><br><span class="line"><span class="function"><span class="params">    continuation: <span class="type">Continuation</span>&lt;<span class="type">Nothing</span>&gt;</span></span></span><br><span class="line"><span class="function"><span class="params">        )</span></span>: Any &#123;</span><br><span class="line">    <span class="keyword">val</span> continuation = continuation <span class="keyword">as</span>? MyFunctionContinuation</span><br><span class="line">    ?: MyFunctionContinuation(continuation <span class="keyword">as</span> Continuation&lt;<span class="built_in">Unit</span>&gt;, token)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> result: Any? = continuation.result</span><br><span class="line">    <span class="keyword">var</span> userId: String? = continuation.userId</span><br><span class="line">    <span class="keyword">val</span> userName: String</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">0</span>) &#123;</span><br><span class="line">        println(<span class="string">"Before"</span>)</span><br><span class="line">        continuation.label = <span class="number">1</span></span><br><span class="line">        result = getUserId(token, continuation)</span><br><span class="line">        <span class="keyword">if</span> (result == COROUTINE_SUSPENDED) &#123;</span><br><span class="line">            <span class="keyword">return</span> COROUTINE_SUSPENDED</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">1</span>) &#123;</span><br><span class="line">        userId = result <span class="keyword">as</span> String</span><br><span class="line">        println(<span class="string">"Got userId: <span class="variable">$userId</span>"</span>)</span><br><span class="line">        continuation.label = <span class="number">2</span></span><br><span class="line">        continuation.userId = userId</span><br><span class="line">        result = getUserName(userId, continuation)</span><br><span class="line">        <span class="keyword">if</span> (result == COROUTINE_SUSPENDED) &#123;</span><br><span class="line">            <span class="keyword">return</span> COROUTINE_SUSPENDED</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">2</span>) &#123;</span><br><span class="line">        userName = result <span class="keyword">as</span> String</span><br><span class="line">        println(User(userId <span class="keyword">as</span> String, userName))</span><br><span class="line">        println(<span class="string">"After"</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">Unit</span></span><br><span class="line">    &#125;</span><br><span class="line">    error(<span class="string">"Impossible"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyFunctionContinuation</span></span>(<span class="keyword">val</span> completion: Continuation&lt;<span class="built_in">Unit</span>&gt;, <span class="keyword">val</span> token: String) : Continuation&lt;String&gt; &#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">val</span> context: CoroutineContext <span class="comment">// 先别管这个变量</span></span><br><span class="line">    <span class="keyword">get</span>() = completion.context</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> label = <span class="number">0</span></span><br><span class="line">    <span class="keyword">var</span> result: Any? = <span class="literal">null</span></span><br><span class="line">    <span class="keyword">var</span> userId: String? = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">resumeWith</span><span class="params">(result: <span class="type">Result</span>&lt;<span class="type">String</span>&gt;)</span></span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (result.isSuccess) &#123;</span><br><span class="line">            <span class="keyword">this</span>.result = result.getOrNull()</span><br><span class="line">            <span class="keyword">val</span> res = printUser(token, <span class="keyword">this</span>)</span><br><span class="line">            completion.resume(res <span class="keyword">as</span> <span class="built_in">Unit</span>)</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="comment">// ... 后边将要讨论</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="异常"><a href="#异常" class="headerlink" title="异常"></a>异常</h2><p>一个<code>continuation</code>能被正常的恢复，也能携带异常恢复。第二种情况将会在挂起点中有异常被抛出时发生。为了模拟这个场景，异常将被设置到结果中，然后每个挂起点都会调用<code>result.throwOnFailure()</code>方法。这个方法的内容就将之前设置的异常抛出（如有），多亏如此，异常才可以被捕获，然后开发者可以看到有意义的堆栈信息。为了让上边说到的这些发生，我们的结果需要同时能保存成功和失败，所以<code>result</code>的实际类型是个泛型<code>Result&lt;T&gt;</code>。</p>
+<p>在下边的展示中，因为我不能使用来自Kotlin标准库中的<code>Result&lt;T&gt;</code>，所以我用自己声明的来代替：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">printUser</span><span class="params">(token: <span class="type">String</span>, continuation: <span class="type">Continuation</span>&lt;<span class="type">Nothing</span>&gt;)</span></span>: Any &#123;</span><br><span class="line">    <span class="keyword">val</span> continuation =</span><br><span class="line">    <span class="keyword">if</span> (continuation <span class="keyword">is</span> MyFunctionContinuation) continuation</span><br><span class="line">    <span class="keyword">else</span> MyFunctionContinuation(continuation <span class="keyword">as</span> Continuation&lt;<span class="built_in">Unit</span>&gt;, token)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> result: Result&lt;Any&gt;? = continuation.result</span><br><span class="line">    <span class="keyword">var</span> userId: String? = continuation.userId</span><br><span class="line">    <span class="keyword">val</span> userName: String</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">0</span>) &#123;</span><br><span class="line">        result?.throwOnFailure()</span><br><span class="line">        println(<span class="string">"Before"</span>)</span><br><span class="line">        continuation.label = <span class="number">1</span></span><br><span class="line">        <span class="keyword">val</span> res = getUserId(token, continuation)</span><br><span class="line">        <span class="keyword">if</span> (res == COROUTINE_SUSPENDED) &#123;</span><br><span class="line">            <span class="keyword">return</span> COROUTINE_SUSPENDED</span><br><span class="line">        &#125;</span><br><span class="line">        result = Result.success(res)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">1</span>) &#123;</span><br><span class="line">        result!!.throwOnFailure()</span><br><span class="line">        userId = result.getOrNull() <span class="keyword">as</span> String</span><br><span class="line">        println(<span class="string">"Got userId: <span class="variable">$userId</span>"</span>)</span><br><span class="line">        continuation.label = <span class="number">2</span></span><br><span class="line">        continuation.userId = userId</span><br><span class="line">        <span class="keyword">val</span> res = getUserName(userId, continuation)</span><br><span class="line">        <span class="keyword">if</span> (res == COROUTINE_SUSPENDED) &#123;</span><br><span class="line">            <span class="keyword">return</span> COROUTINE_SUSPENDED</span><br><span class="line">        &#125;</span><br><span class="line">        result = Result.success(res)</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (continuation.label == <span class="number">2</span>) &#123;</span><br><span class="line">        result!!.throwOnFailure()</span><br><span class="line">        userName = result.getOrNull() <span class="keyword">as</span> String</span><br><span class="line">        println(User(userId <span class="keyword">as</span> String, userName))</span><br><span class="line">        println(<span class="string">"After"</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">Unit</span></span><br><span class="line">    &#125;</span><br><span class="line">    error(<span class="string">"Impossible"</span>)</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">MyFunctionContinuation</span></span>(<span class="keyword">val</span> completion: Continuation&lt;<span class="built_in">Unit</span>&gt;, <span class="keyword">val</span> token: String) : Continuation&lt;String&gt; &#123;</span><br><span class="line">    <span class="keyword">override</span> <span class="keyword">val</span> context: CoroutineContext <span class="comment">// Don't think about it now</span></span><br><span class="line">    <span class="keyword">get</span>() = completion.context</span><br><span class="line"></span><br><span class="line">    <span class="keyword">var</span> label = <span class="number">0</span></span><br><span class="line">    <span class="keyword">var</span> result: Result&lt;Any&gt;? = <span class="literal">null</span></span><br><span class="line">    <span class="keyword">var</span> userId: String? = <span class="literal">null</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">resumeWith</span><span class="params">(result: <span class="type">Result</span>&lt;<span class="type">String</span>&gt;)</span></span> &#123;</span><br><span class="line">        <span class="keyword">this</span>.result = result</span><br><span class="line">        <span class="keyword">val</span> res = <span class="keyword">try</span> &#123;</span><br><span class="line">            <span class="keyword">val</span> r = printUser(token, <span class="keyword">this</span>)</span><br><span class="line">            <span class="keyword">if</span> (r == COROUTINE_SUSPENDED) <span class="keyword">return</span></span><br><span class="line">            Result.success(r <span class="keyword">as</span> <span class="built_in">Unit</span>)</span><br><span class="line">        &#125; <span class="keyword">catch</span> (e: Throwable) &#123;</span><br><span class="line">            Result.failure(e)</span><br><span class="line">        &#125;</span><br><span class="line">        completion.resumeWith(res)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">fun</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">    toStart()</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h2 id="调用栈"><a href="#调用栈" class="headerlink" title="调用栈"></a>调用栈</h2><p>当方法<code>a</code>调用方法<code>b</code>，虚拟机需要存储<code>a</code>的状态以及当<code>b</code>执行完成后要继续执行的地址是多少。以上信息所存储的格式叫做调用栈。问题是当我们挂起时，我们释放了线程，也就是说我们的调用栈被自己清除了。所以结果就是，当我们恢复时没有用到它。取而代之的是<code>continuation</code>们可以是作为一个调用栈。每一个<code>continuation</code>保持着我们在哪里挂起的（用<code>label</code>）、方法本地的变量以及参数，还有调用我们的那个方法所对应的<code>continuation</code>的引用。一个<code>continuation</code>引用着另外一个，另外一个又引用其他的，如此如此。结果就是，我们的<code>continuation</code>就像是一个巨型洋葱，在调用栈上保存着所有的东西，看起来就像是这样：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">a</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">val</span> user = getUser()</span><br><span class="line">    b()</span><br><span class="line">    b()</span><br><span class="line">    b()</span><br><span class="line">    <span class="keyword">return</span> user</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">b</span><span class="params">()</span></span> &#123;</span><br><span class="line">    <span class="keyword">for</span> (i <span class="keyword">in</span> <span class="number">1</span>..<span class="number">10</span>) &#123;</span><br><span class="line">        c(i)</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">suspend</span> <span class="function"><span class="keyword">fun</span> <span class="title">c</span><span class="params">(i: <span class="type">Int</span>)</span></span> &#123;</span><br><span class="line">    delay(i * <span class="number">100</span>)</span><br><span class="line">    println(<span class="string">"Tick"</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>一个简单的<code>continuation</code>表示就像是下边这样：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">CContinuation &#123;</span><br><span class="line">   label -&gt; 1</span><br><span class="line">   completion -&gt; BContinuation &#123;</span><br><span class="line">       i -&gt; 4</span><br><span class="line">       label -&gt; 1</span><br><span class="line">       completion -&gt; AContinuation &#123;</span><br><span class="line">           label -&gt; 2</span><br><span class="line">           user -&gt; User@1234</span><br><span class="line">       &#125;</span><br><span class="line">   &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>当一个<code>continuation</code>恢复了，每个<code>continuation</code>首先调用它自己的方法，当调用完成时，它再去恢复调用它的方法对应的<code>continuation</code>。这样调用方法的过程会重复直到栈顶：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">resumeWith</span><span class="params">(result: <span class="type">Result</span>&lt;<span class="type">String</span>&gt;)</span></span> &#123;</span><br><span class="line">  <span class="keyword">this</span>.result = result</span><br><span class="line">  <span class="keyword">val</span> res = <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">val</span> r = requestUser(token, <span class="keyword">this</span>)</span><br><span class="line">    <span class="keyword">if</span> (r == COROUTINE_SUSPENDED) <span class="keyword">return</span></span><br><span class="line">    Success(r)</span><br><span class="line">  &#125; <span class="keyword">catch</span> (e: Throwable) &#123;</span><br><span class="line">    Failure(e)</span><br><span class="line">  &#125;</span><br><span class="line">  completion.resumeWith(res)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>用图表示，整个过程看起来就是下边这样：</p>
+<p><img src="https://marcinmoskala.com/coroutines_book/manuscript/resources/104_call_stack.png" alt=""></p>
+<p>像是异常一样，它们被一个个的从方法中被抛出来，除非他们在哪里被捕获了。</p>
+<blockquote>
+<p>译者注：所以这里可以理解为<code>completion</code>就是调用当前方法的方法对应的<code>continuation</code>。当当前方法结束时，会带着结果再次调用父方法，父方法进入下一状态（或抛出此时result中已有的异常）</p>
+</blockquote>
+<h2 id="真实的代码"><a href="#真实的代码" class="headerlink" title="真实的代码"></a>真实的代码</h2><p>真实的<code>continuation</code>以及挂起方法会比这复杂得多，因为它包含了一些优化和额外的算法：</p>
+<ul>
+<li>构建一个更好的异常堆栈</li>
+<li>添加协程挂起拦截器（后边会讨论这个特性）</li>
+</ul>
+<p>下边是基于Kotlin 1.5.30版本的一部分<code>BaseContinuationImpl</code>的实现，其展示了真正的<code>resumeWith</code>实现（其他方法和注释被跳过了）：</p>
+<figure class="highlight kotlin"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">internal</span> <span class="keyword">abstract</span> <span class="class"><span class="keyword">class</span> <span class="title">BaseContinuationImpl</span></span>(</span><br><span class="line">    <span class="keyword">val</span> completion: Continuation&lt;Any?&gt;?</span><br><span class="line">) : Continuation&lt;Any?&gt;, CoroutineStackFrame, Serializable &#123;</span><br><span class="line">    <span class="comment">// 使用循环代替递归是内部决定好的，不能让外部有机会复写，所以final</span></span><br><span class="line">    <span class="keyword">final</span> <span class="keyword">override</span> <span class="function"><span class="keyword">fun</span> <span class="title">resumeWith</span><span class="params">(result: <span class="type">Result</span>&lt;<span class="type">Any</span>?&gt;)</span></span> &#123;</span><br><span class="line">        <span class="comment">// 使用循环代替递归让恢复时堆栈能更加短</span></span><br><span class="line">        <span class="keyword">var</span> current = <span class="keyword">this</span></span><br><span class="line">        <span class="keyword">var</span> param = result</span><br><span class="line">        <span class="keyword">while</span> (<span class="literal">true</span>) &#123;</span><br><span class="line">            <span class="comment">// 用于填充debug信息</span></span><br><span class="line">            probeCoroutineResumed(current)</span><br><span class="line">            with(current) &#123;</span><br><span class="line">                <span class="keyword">val</span> completion = completion!! <span class="comment">// fail fast</span></span><br><span class="line">                <span class="comment">// 执行自己的内容，产生结果</span></span><br><span class="line">                <span class="keyword">val</span> outcome: Result&lt;Any?&gt; =</span><br><span class="line">                    <span class="keyword">try</span> &#123;</span><br><span class="line">                        <span class="keyword">val</span> outcome = invokeSuspend(param)</span><br><span class="line">                        <span class="comment">// 如果需要挂起，那么直接返回，不要担心，下游方法有当前continuation的引用（completion），会在完成时自己找回来的</span></span><br><span class="line">                        <span class="keyword">if</span> (outcome === COROUTINE_SUSPENDED)</span><br><span class="line">                            <span class="keyword">return</span></span><br><span class="line">                        Result.success(outcome)</span><br><span class="line">                    &#125; <span class="keyword">catch</span> (exception: Throwable) &#123;</span><br><span class="line">                        Result.failure(exception)</span><br><span class="line">                    &#125;</span><br><span class="line">                releaseIntercepted()</span><br><span class="line">                <span class="comment">// 状态机实例（意义上）要终结了……</span></span><br><span class="line">                <span class="keyword">if</span> (completion <span class="keyword">is</span> BaseContinuationImpl) &#123;</span><br><span class="line">                    <span class="comment">// 使用循环而非递归进行调用链回溯，completion代表的是调用自己的方法</span></span><br><span class="line">                    current = completion</span><br><span class="line">                    param = outcome</span><br><span class="line">                &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                    <span class="comment">// 顶层调用将不是BaseContinuationImpl类型</span></span><br><span class="line">                    <span class="comment">// 会带着最终的结果退出</span></span><br><span class="line">                    completion.resumeWith(outcome)</span><br><span class="line">                    <span class="keyword">return</span></span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>如你所见，其使用了循环来代替递归调用。这个变化会让代码有一定优化，更加简单。</p>
+<h2 id="讨论"><a href="#讨论" class="headerlink" title="讨论"></a>讨论</h2><p>真实的实现原理其实是更加复杂的，但是我希望通过这篇文章你能对协程的内部有一些概念了，关键点是：</p>
+<ul>
+<li>挂起方法有些像是状态机，在方法的一开始以及每个挂起方法调用后都有一个状态</li>
+<li><code>label</code>所代表的状态以及本地数据都被保存在<code>continuation</code>对象中</li>
+<li>方法所对应的<code>continuation</code>是被另一个<code>continuation</code>所修饰的，所有的这些<code>continuation</code>表示了一个调用栈，这个调用栈会在恢复时起到作用</li>
+</ul>
+<ol>
+<li>实际的算法会更加复杂，<code>label</code>的第一位会额外的产生变化，在另外的地方这一位会进行检查。这个算法用来让挂起方法支持再现。为了追求简单的理解，这一点被跳过了</li>
+<li>调用栈是有限空间，如果它都被用完了，那么我们就需要处理<code>StackOverflowError</code>栈溢出错误了</li>
+</ol>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/08/05/%20Dagger2%20Tips/" rel="prev" title=" Dagger2 Tips">
+                  <i class="fa fa-chevron-left"></i>  Dagger2 Tips
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Kevin Liu</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+</body>
+</html>

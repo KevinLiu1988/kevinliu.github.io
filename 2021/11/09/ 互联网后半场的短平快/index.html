@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 4.2.1">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="//cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.1/css/all.min.css">
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/animate.css@3.1.1/animate.min.css">
+
+<script class="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"lkv1988.github.io","root":"/","images":"/images","scheme":"Pisces","version":"8.0.2","exturl":false,"sidebar":{"position":"right","width":330,"display":"post","padding":18,"offset":12},"copycode":false,"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}};
+  </script>
+<meta name="description" content="看到入职新公司已有3个月，做的方向是之前接触过、做过但却从未深入过的性能优化方向。刚接触时，一脸懵逼，不知道该做些什么。这不像是需求有直接告诉你标的在哪，你根据需求的脉络在脑子里构件好大概的构思后就可以下笔犹如神了。性能，更像是迷雾。作为老兵，必然了解性能包含什么：卡顿、内存、CPU、帧率等等。这些常规的数字，如何得到是比较经典且易于实践的话题，而真正的问题在于：得到这些冰冷的数据之后呢？下一步是">
+<meta property="og:type" content="article">
+<meta property="og:title" content=" 互联网后半场的短平快">
+<meta property="og:url" content="http://lkv1988.github.io/2021/11/09/%20%E4%BA%92%E8%81%94%E7%BD%91%E5%90%8E%E5%8D%8A%E5%9C%BA%E7%9A%84%E7%9F%AD%E5%B9%B3%E5%BF%AB/index.html">
+<meta property="og:site_name" content="Kevin Liu&#39;s Blog">
+<meta property="og:description" content="看到入职新公司已有3个月，做的方向是之前接触过、做过但却从未深入过的性能优化方向。刚接触时，一脸懵逼，不知道该做些什么。这不像是需求有直接告诉你标的在哪，你根据需求的脉络在脑子里构件好大概的构思后就可以下笔犹如神了。性能，更像是迷雾。作为老兵，必然了解性能包含什么：卡顿、内存、CPU、帧率等等。这些常规的数字，如何得到是比较经典且易于实践的话题，而真正的问题在于：得到这些冰冷的数据之后呢？下一步是">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-11-09T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-11-10T06:25:37.533Z">
+<meta property="article:author" content="Kevin Liu">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="http://lkv1988.github.io/2021/11/09/%20%E4%BA%92%E8%81%94%E7%BD%91%E5%90%8E%E5%8D%8A%E5%9C%BA%E7%9A%84%E7%9F%AD%E5%B9%B3%E5%BF%AB/">
+
+
+<script class="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+<title> 互联网后半场的短平快 | Kevin Liu's Blog</title>
+  
+
+
+
+  <noscript>
+  <style>
+  body { margin-top: 2rem; }
+
+  .use-motion .menu-item,
+  .use-motion .sidebar,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header {
+    visibility: visible;
+  }
+
+  .use-motion .header,
+  .use-motion .site-brand-container .toggle,
+  .use-motion .footer { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle,
+  .use-motion .custom-logo-image {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line {
+    transform: scaleX(1);
+  }
+
+  .search-pop-overlay, .sidebar-nav { display: none; }
+  .sidebar-panel { display: block; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <h1 class="site-title">Kevin Liu's Blog</h1>
+      <i class="logo-line"></i>
+    </a>
+      <p class="site-subtitle" itemprop="description">Keep Moving</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+</div>
+        
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <section class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#看到"><span class="nav-number">1.</span> <span class="nav-text">看到</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#感受"><span class="nav-number">2.</span> <span class="nav-text">感受</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#私以为"><span class="nav-number">3.</span> <span class="nav-text">私以为</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#做"><span class="nav-number">4.</span> <span class="nav-text">做</span></a></li></ol></div>
+        </section>
+        <!--/noindex-->
+
+        <section class="site-overview-wrap sidebar-panel">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">Kevin Liu</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap site-overview-item animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives">
+          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author site-overview-item animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/lkv1988" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lkv1988" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:airk908@gmail.com" title="E-Mail → mailto:airk908@gmail.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+
+
+
+        </section>
+      </div>
+    </div>
+  </aside>
+  <div class="sidebar-dimmer"></div>
+
+
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+  <a href="https://github.com/lkv1988" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://lkv1988.github.io/2021/11/09/%20%E4%BA%92%E8%81%94%E7%BD%91%E5%90%8E%E5%8D%8A%E5%9C%BA%E7%9A%84%E7%9F%AD%E5%B9%B3%E5%BF%AB/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="Kevin Liu">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Kevin Liu's Blog">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+           互联网后半场的短平快
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+      
+
+      <time title="创建时间：2021-11-10 00:00:00 / 修改时间：14:25:37" itemprop="dateCreated datePublished" datetime="2021-11-10T00:00:00+08:00">2021-11-10</time>
+    </span>
+
+  
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+        <h2 id="看到"><a href="#看到" class="headerlink" title="看到"></a>看到</h2><p>入职新公司已有3个月，做的方向是之前接触过、做过但却从未深入过的性能优化方向。<br>刚接触时，一脸懵逼，不知道该做些什么。这不像是需求有直接告诉你标的在哪，你根据需求的脉络在脑子里构件好大概的构思后就可以下笔犹如神了。<br>性能，更像是迷雾。作为老兵，必然了解性能包含什么：卡顿、内存、CPU、帧率等等。这些常规的数字，如何得到是比较经典且易于实践的话题，而真正的问题在于：得到这些冰冷的数据之后呢？下一步是什么？</p>
+<h2 id="感受"><a href="#感受" class="headerlink" title="感受"></a>感受</h2><p>数据是冰冷的，我较为推崇数据推动论，即：通过数据折射客观的现实，依据科学合理的数据与业务指标的关系，通过客观的数据推动我们做优化。<br>但大家尝鲜尝的太多了，如果现在职场内一水都是刚刚毕业的学生，一下子就进入到后半场中。可能这样子，这个群体的意识是会有共识的。这个共识可能就是：</p>
+<ul>
+<li>结果、进展不是那么好拿的，如此大的一个盘子，寻求突破是一个积沙成塔的过程，日行千里已不现实，需要沉下心来认真思索、探索、尝试、应用对某个或大或小的领域做持续的进步<blockquote>
+<p>当然，如果是小盘子中，是0到1的过程中，这些应该并不适合</p>
+</blockquote>
+</li>
+</ul>
+<p>But，现实并不如此，当今互联网群体中绝大绝大部分人都是从飞速发展中走过来的，多多少少都经历过、或至少听闻过，从0到1的过程是怎么怎么的酸爽，而其中通过乘风拿到的各种结果，借助其得到的晋升是如何如何的爽。所以，群体意识是必然不同的。</p>
+<p>曾经（很久），有同事直言不讳：“我现在就是想一下子发现一个业界大框架的BUG，把它改掉就一战成名！”。是啊，谁不曾这么想呢？只消花那么一天半天，只要坚持不看手机不大一会，稍稍认真那么一下下，好家伙，就可以发现一个无人发现、曾经很烂的问题，从此扬名立万。此举写入简历，谁人不佩服？</p>
+<h2 id="私以为"><a href="#私以为" class="headerlink" title="私以为"></a>私以为</h2><p>谁人不想吃快餐呢？耐心是比较难得的东西，就像是面试。有几人有真本事，又有多少是突击的八股文？说到底，短平快的东西，只要试过就回不去了。</p>
+<p>我以为不只是性能，但确实是性能。怎么说？以性能为点，我看到了优化已经难做，更多的时候是你不知道该做什么，是在找目标。你说帧率，一定要60帧？不见得，强行60帧反倒会体感卡顿，参见电影帧的概念。所以，数据、耐心、客观有思考，找回头脑，有些东西是值得的，有些东西是不值得的，至于哪些是要靠事实来探索。如果你操作的是10万以内的流量，那且慢，直接去做就是了。如果你操作的已经上了千万，别相信自己的感觉，除非你真的是天选之人，否则数据才是王道。为什么说“确实是性能”，你不觉得以这一点看，凡是已经到瓶颈的业务再度寻求发展，都是一样的逻辑吗？想要短平快，我想说是不存在了（有人会反对，所以我又说这不是绝对的）。</p>
+<p>有盲点，有可能有很多。但问题又来了，一座小桥，有什么问题，一眼就可以看到。一座跨海大桥呢？</p>
+<h2 id="做"><a href="#做" class="headerlink" title="做"></a>做</h2><p>抛弃短平快思维，不代表变得慢下来，而是变得谨慎，变得科学，变得更有价值。数据为眼，但又不是眼。因为眼看清即可，比较主观化。科学一点的比喻应该是以数据为显微镜，你看到什么程度了？如果现在还是模糊的（&lt;1倍）那则是不合格的状态，就变得去看清。每每看得更清楚（倍数变大），就根据折射出的客观状况进行推断、思考，找到可能存在的优化点并付诸实施。实施上，机灵些，不要凡事上来就是0到1的版本，先做它个0.1试试对不对，行不行。时间、人力都是成本，还是要讲个ROI的。听起来像是投资，找一些可能成功的优化点，挨个试错，但凡成了那么几个，你的产出就是有价值的。即使是错的那些，也是捧月的众星。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/2021/09/08/%E8%AF%91-%E6%B7%B1%E5%85%A5Kotlin%E5%8D%8F%E7%A8%8B/" rel="prev" title="译-深入Kotlin协程">
+                  <i class="fa fa-chevron-left"></i> 译-深入Kotlin协程
+                </a>
+            </div>
+            <div class="post-nav-item">
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      const activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      const commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+
+<div class="copyright">
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Kevin Liu</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/pisces/" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <script src="//cdn.jsdelivr.net/npm/animejs@3.2.1/lib/anime.min.js"></script>
+<script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+
+
+
+  
+
+
+
+
+
+
+</body>
+</html>
